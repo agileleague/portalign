@@ -15,6 +15,8 @@ class Portalign
             end
           end
         end
+
+        %w(ports security_groups).each {|opt| force_array(config, opt)}
       end
     end
 
@@ -58,13 +60,34 @@ class Portalign
         end
 
         opts.parse!(args)
+
+        %w(ports security_groups).each {|opt| force_array(config, opt)}
       end
+    end
+
+    def self.validate_config(config)
+      unless config.keys.include?(:access_key_id) && config.keys.include?(:secret_access_key)
+        return [false, "You must specify an AWS access_key_id and secret_access_key"]
+      end
+
+      unless config[:security_groups] && config[:security_groups].any?
+        return [false, "You must specify at least one security group."]
+      end
+
+      true
     end
 
     protected
 
     def self.config_file_paths
       CONFIG_FILE_PATHS
+    end
+
+    def self.force_array(config, option)
+      option = option.to_sym
+      if config[option]
+        config[option] = config[option].is_a?(Array) ? config[option] : [config[option]]
+      end
     end
   end
 end

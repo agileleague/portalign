@@ -22,7 +22,6 @@ describe Portalign do
 
   before do
     Portalign.stub(:call_checkip).and_return(checkip_response)
-    Portalign.stub(:ec2_instance).and_return(ec2_instance)
   end
 
   context "#resolve_ip" do
@@ -47,7 +46,7 @@ describe Portalign do
           "#{current_ip}/32"
         )
 
-        Portalign.authorize_ingress(current_ip, [portalign_config[:security_groups]], [portalign_config[:ports]], portalign_config[:protocol])
+        Portalign.authorize_ingress(ec2_instance, current_ip, Portalign::NARROW_CIDR, [portalign_config[:security_groups]], [portalign_config[:ports]], portalign_config[:protocol])
       end
     end
   end
@@ -71,9 +70,8 @@ describe Portalign do
           "0.0.0.0/0"
         )
 
-        Portalign.deauthorize_ingress(current_ip, [portalign_config[:security_groups]], [portalign_config[:ports]], portalign_config[:protocol])
+        Portalign.deauthorize_ingress(ec2_instance, current_ip, Portalign::NARROW_CIDR, [portalign_config[:security_groups]], [portalign_config[:ports]], portalign_config[:protocol])
       end
-
     end
   end
 end

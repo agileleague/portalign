@@ -4,4 +4,11 @@ require File.expand_path(File.join(File.dirname(__FILE__), %w[.. lib portalign])
 require File.expand_path(File.join(File.dirname(__FILE__), %w[.. lib portalign config]))
 
 args = ARGV
-config = Portalign.config(args)
+config = Portalign.build_config(args)
+valid, msg = Portalign.validate_config(config)
+if valid
+  Portalign.run(config)
+else
+  puts msg
+  exit
+end

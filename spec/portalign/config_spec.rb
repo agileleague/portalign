@@ -37,7 +37,7 @@ describe Portalign::Config do
         :access_key_id => access_key_id,
         :secret_access_key => secret_access_key,
         :ports => ports,
-        :security_groups => security_groups.first
+        :security_groups => security_groups
       }
     end
 

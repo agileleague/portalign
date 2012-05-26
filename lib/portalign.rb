@@ -8,40 +8,51 @@ class Portalign
   CHECK_IP_URL = "http://checkip.dyndns.org"
   CHECK_IP_REGEX = /(\d+\.){3}\d+/
 
-  def self.config(args)
-    config = {
-      :ports => 22,
+  NARROW_CIDR = "32"
+  WIDE_IP = "0.0.0.0"
+  WIDE_CIDR = "0"
+
+  def self.build_config(args)
+    {
+      :ports => [22],
       :wide => false,
       :deauthorize => false,
       :protocol => "tcp"
     }.merge!(Config.load_from_file).merge!(Config.parse_opts(args))
   end
 
-  def self.update_security_group(ip_address, security_groups, ports, protocol = "tcp")
-    ports = ports.is_a?(Array) ? ports : [ports]
-    security_groups = security_groups.is_a?(Array) ? security_groups : [security_groups]
+  def self.validate_config(config)
+    Config.validate_config(config)
+  end
 
-    if ip_address
-      authorize_ingress(ip_address, security_groups, ports, protocol)
+  def self.run(config)
+    ip_address = resolve_ip
+
+    ec2 = ec2_instance(config[:access_key_id], config[:secret_access_key])
+
+    if config[:deauthorize]
+      deauthorize_ingress(ec2, ip_address, NARROW_CIDR, config[:security_groups], config[:ports], config[:protocol])
+    elsif config[:wide]
+      authorize_ingress(ec2, WIDE_IP, WIDE_CIDR, config[:security_groups], config[:ports], config[:protocol])
     else
-      deauthorize_ingress(ip_address, security_groups, ports, protocol)
+      authorize_ingress(ec2, ip_address, NARROW_CIDR, config[:security_groups], config[:ports], config[:protocol])
     end
   end
 
-  def self.authorize_ingress(ip_address, security_groups, ports, protocol)
+  def self.authorize_ingress(ec2, ip_address, cidr, security_groups, ports, protocol)
     security_groups.each do |security_group|
       ports.each do |port|
-        ec2_instance.authorize_security_group_IP_ingress(security_group, port, port, protocol, "#{ip_address}/32")
+        ec2.authorize_security_group_IP_ingress(security_group, port, port, protocol, "#{ip_address}/#{cidr}")
       end
     end
   end
 
-  def self.deauthorize_ingress(ip_address, security_groups, ports, protocol)
+  def self.deauthorize_ingress(ec2, ip_address, cidr, security_groups, ports, protocol)
     security_groups.each do |security_group|
       ports.each do |port|
         # We deauthorize both the specific IP and also the wide open IP
-        ec2_instance.revoke_security_group_IP_ingress(security_group, port, port, protocol, "#{ip_address}/32")
-        ec2_instance.revoke_security_group_IP_ingress(security_group, port, port, protocol, "0.0.0.0/0")
+        ec2.revoke_security_group_IP_ingress(security_group, port, port, protocol, "#{ip_address}/#{cidr}")
+        ec2.revoke_security_group_IP_ingress(security_group, port, port, protocol, "#{WIDE_IP}/#{WIDE_CIDR}")
       end
     end
   end
