@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+require File.expand_path(File.join(File.dirname(__FILE__), %w[.. lib portalign]))
+require File.expand_path(File.join(File.dirname(__FILE__), %w[.. lib portalign config]))
+
+args = ARGV
+config = Portalign.config(args)
