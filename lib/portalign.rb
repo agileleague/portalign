@@ -27,6 +27,7 @@ class Portalign
 
   def self.run(config)
     ip_address = resolve_ip
+    puts "Resolved local IP to #{ip_address}"
 
     ec2 = ec2_instance(config[:access_key_id], config[:secret_access_key])
 
@@ -42,7 +43,16 @@ class Portalign
   def self.authorize_ingress(ec2, ip_address, cidr, security_groups, ports, protocol)
     security_groups.each do |security_group|
       ports.each do |port|
-        ec2.authorize_security_group_IP_ingress(security_group, port, port, protocol, "#{ip_address}/#{cidr}")
+        puts "Authorizing #{ip_address}/#{cidr} for #{security_group} on port #{port}"
+        begin
+          ec2.authorize_security_group_IP_ingress(security_group, port, port, protocol, "#{ip_address}/#{cidr}")
+        rescue Aws::AwsError => e
+          # It will throw an error if already authorized, but that's OK
+          # with us.
+          unless e.message =~ /has already been authorized/
+            raise
+          end
+        end
       end
     end
   end
@@ -51,7 +61,10 @@ class Portalign
     security_groups.each do |security_group|
       ports.each do |port|
         # We deauthorize both the specific IP and also the wide open IP
+        puts "Deauthorizing #{ip_address}/#{cidr} for #{security_group} on port #{port}"
         ec2.revoke_security_group_IP_ingress(security_group, port, port, protocol, "#{ip_address}/#{cidr}")
+
+        puts "Deauthorizing #{WIDE_IP}/#{WIDE_CIDR} for #{security_group} on port #{port}"
         ec2.revoke_security_group_IP_ingress(security_group, port, port, protocol, "#{WIDE_IP}/#{WIDE_CIDR}")
       end
     end
@@ -64,7 +77,8 @@ class Portalign
   protected
 
   def self.ec2_instance(access_key_id, secret_access_key)
-    @ec2_instance ||= Aws::Ec2.new(access_key_id, secret_access_key)
+    logger = Logger.new(File.new("/dev/null", "w"))
+    @ec2_instance ||= Aws::Ec2.new(access_key_id, secret_access_key, :logger => logger)
   end
 
   def self.call_checkip
