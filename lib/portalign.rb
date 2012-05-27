@@ -26,8 +26,11 @@ class Portalign
   end
 
   def self.run(config)
-    ip_address = resolve_ip
-    puts "Resolved local IP to #{ip_address}"
+    unless config[:wide]
+      ip_address = resolve_ip
+      exit unless ip_address
+      puts "Resolved local IP to #{ip_address}"
+    end
 
     ec2 = ec2_instance(config[:access_key_id], config[:secret_access_key])
 
@@ -71,7 +74,14 @@ class Portalign
   end
 
   def self.resolve_ip
-    parse_checkip(call_checkip)
+    # TODO: Perhaps have several services in case one is down?
+    begin
+      parse_checkip(call_checkip)
+    rescue Exception => e
+      puts "Unable to resolve local IP address. Exiting."
+      puts "Error: #{e.message}"
+      false
+    end
   end
 
   protected
@@ -82,8 +92,7 @@ class Portalign
   end
 
   def self.call_checkip
-    # TODO: Put some guards around this in case of timeout, 404, etc.
-    open("http://checkip.dyndns.org").read
+    open(CHECK_IP_URL).read
   end
 
   def self.parse_checkip(response)
