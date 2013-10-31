@@ -32,7 +32,7 @@ class Portalign
       puts "Resolved local IP to #{ip_address}"
     end
 
-    ec2 = ec2_instance(config[:access_key_id], config[:secret_access_key])
+    ec2 = ec2_instance(config[:access_key_id], config[:secret_access_key], config[:region])
 
     if config[:deauthorize]
       deauthorize_ingress(ec2, ip_address, NARROW_CIDR, config[:security_groups], config[:ports], config[:protocol])
@@ -86,9 +86,9 @@ class Portalign
 
   protected
 
-  def self.ec2_instance(access_key_id, secret_access_key)
+  def self.ec2_instance(access_key_id, secret_access_key, region)
     logger = Logger.new(File.new("/dev/null", "w"))
-    @ec2_instance ||= Aws::Ec2.new(access_key_id, secret_access_key, :logger => logger)
+    @ec2_instance ||= Aws::Ec2.new(access_key_id, secret_access_key, :region => region, :logger => logger)
   end
 
   def self.call_checkip
