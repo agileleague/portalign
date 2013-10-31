@@ -32,6 +32,9 @@ class Portalign
           opts.on("--secret-access-key=SECRET_ACCESS_KEY", "The AWS secret access key. Better to specify in a config file. See README") do |secret_access_key|
             config[:secret_access_key] = secret_access_key 
           end
+          opts.on("-r REGION", "--region=REGION", "The AWS region.  AWS's default is us-east") do |region|
+            config[:region] = region
+          end
           opts.on("-p PORTS", "--ports=PORTS", Array, "A comma delimited list of ports to align. Defaults to 22") do |ports|
             config[:ports] = ports.map(&:to_i)
           end

@@ -54,6 +54,7 @@ Example File:
 
     access_key_id: "acb1234"
     secret_access_key: "1234abc"
+    region: "us-west-1"
     security_groups:
     - "mygroup"
     - "othergroup"
